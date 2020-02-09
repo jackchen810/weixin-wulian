@@ -1,0 +1,255 @@
+<template>
+
+    <view>
+        <i-row>
+            <i-col span="12" i-class="item_box">
+                <image style="width: 100%; height: 200px; background-color: #eeeeee;" mode="aspectFit" src="{{src}}"></image>
+            </i-col>
+            <i-col span="12" i-class="item_box">
+                <text style="color:black;font-size:18px;">{{project_name}}\n</text>
+                <text style="color:black;font-size:5px;">\n</text>
+                <!--
+                <repeat for="{{device_list}}" key="index" index="index" item="item">
+                    <text style="color:black;font-size:12px;">{{index+1}}：{{item.device_name}}\n</text>
+                </repeat>
+                -->
+                <text style="color:black;font-size:12px;">产品结构：模块化板式\n</text>
+                <text style="color:black;font-size:12px;">臭氧产量：{{status_stats.ozone_provide}}kg O3/h\n</text>
+                <text style="color:black;font-size:12px;">总功率：{{status_stats.total_power}}kw\n</text>
+                <text style="color:black;font-size:12px;">运行模块数量：{{status_stats.run_unit_count}}\n</text>
+                <text style="color:black;font-size:12px;">停止模块数量：{{status_stats.stop_unit_count}}\n</text>
+                <text style="color:black;font-size:12px;">故障模块数量：{{status_stats.fault_unit_count}}\n</text>
+            </i-col>
+        </i-row>
+        <view class="pie__chart">
+            <ec-canvas id="mychart-one" canvas-id="mychart-multi-one" ec="{{ ecOne }}"></ec-canvas>
+        </view>
+    </view>
+</template>
+<script>
+//@符号表示的是一个路径，具体表示什么，需要看配置文件里的配置，在webpack.base.conf.js中的alias里，比如'@': resolve('src')表示将@代替src文件路径
+import wepy from 'wepy';
+import api from '@/api/api';
+import tip from '@/utils/tip';
+import promisify from '@/utils/promisify';
+import echarts from '@/ec-canvas/echarts_min.js';
+import {
+  USER_INFO,DEVICE_NAME,CHANNEL_NAME,DEVUNIT_NAME,PROJECT_NAME,PAGE_CONTEXT
+} from '@/utils/constant';
+export default class ProjectOverview extends wepy.page {
+    config = {
+        navigationBarTitleText: '项目',
+        usingComponents: {
+            "i-row": "../iview/row/index",
+            "i-col": "../iview/col/index",
+            "i-radio": "../iview/radio/index",
+            "ec-canvas": "../ec-canvas/ec-canvas"
+        }
+    }
+    components = {
+
+    }
+
+    data = {
+        ecOne: {
+            disableTouch:true,
+            lazyLoad: true,
+            project_name:'',
+            seriesData:[],
+            onInit: this.initChart,
+        },
+        ecTwo: {
+            lazyLoad: true
+        },
+        project_name: "",
+        devunit_name: "jinxi_1",
+        device_name: "",
+        status_stats: {},
+        device_list: [],
+        project_list: [],
+        current: "tab1",
+        src:"https://dsjiaqi.cn/image/upload_06a23bf183e53c076df887d1a94fe336.jpg",
+        oneComponent:{},
+        twoComponent:{}
+    }
+
+    async getProjectList() {
+        let that = this;
+        let params = { };
+        let json = await api.getProjectArray({query: params});
+        console.log("[project_overview], getProjectList", json.data);
+        if (json.data.ret_code == 0) {
+            that.project_list = json.data.extra;
+            that.$apply();
+        } else {
+            tip.error(json.data.ret_msg)
+        }
+    }
+    async getDeviceList(params ) {
+        let that = this;
+        let json = await api.getDeviceInfo({query: params});
+        //console.log(json.data);
+        if (json.data.ret_code == 0) {
+            that.device_list = json.data.extra;
+            console.log("[project_overview], getDeviceList:", that.device_list);
+            that.$apply();
+        } else {
+            tip.error(json.data.ret_msg)
+        }
+        that.showLoading = false;
+    }
+    async getDeviceStatusStats(params) {
+        let that = this;
+        let json = await api.getDevModuleStatusStats({query: params});
+        console.log("[device_module], getDeviceStatusStats:", json.data);
+        if (json.data.ret_code == 0) {
+            that.status_stats = json.data.extra;
+            that.$apply();
+        } else {
+            tip.error(json.data.ret_msg)
+        }
+        that.showLoading = false;
+    }
+    mySetOption(canvas, width, height, seriesData) {
+        console.log('[project_overview], into initChart', height, width);
+        console.log('[project_overview], into initChart', seriesData);
+
+        const chart = echarts.init(canvas, null, {width: width, height: height});
+        canvas.setChart(chart);
+        const option = {
+            //backgroundColor: '#2c343c',
+            tooltip : {
+                trigger: 'item',
+                formatter: "{a} <br/>{b} : {c} ({d}%)"
+            },
+            legend: {
+                //orient: 'vertical',
+                top: 200,
+                left: 'center',
+                data:['1#设备(100kg)','2#设备(100kg)','3#设备(100kg)','4#设备(100kg)']
+            },
+            series : [
+                {
+                    name: '数据',
+                    type: 'pie',
+                    radius : ['35%', '50%'],
+                    center: ['50%', '45%'],
+                    data: seriesData,
+                }
+            ]
+        };
+
+        chart.setOption(option);
+        console.log('[project_overview], into setOption');
+        return chart;
+    }
+    async initChart(canvas, width, height) {
+        //this 指向 this.ec
+        let params = {filter:{project_name: this.project_name}};
+
+        console.log('[project_overview], send request...', this.project_name);
+        const getRequest = promisify(wx.request);
+
+        var self = this;
+        getRequest({
+             url: 'https://dsjiaqi.cn/api/device/manage/list',
+             method: 'POST',
+             data:params,
+             header: { 'Content-Type': 'application/json', 'Cookie': wepy.getStorageSync("Cookie") },
+        }).then(res=>{
+             // success
+             let seriesData = [];
+             let devList  = res.data.extra;
+             self.device_list = devList;
+             self.$apply();
+             for (let i=0 ;i < devList.length; i++){
+                seriesData.push({name: i + 1 +"#设备(100kg)", value:devList[i].device_ability});
+             }
+
+            console.log('[project_overview], post request finish...', seriesData);
+            return self.mySetOption(canvas, width, height, seriesData);
+        }).catch(res=>{
+
+        });
+        console.log('[project_overview], initChart finish');
+    }
+    onLoad() {
+        //这一步是一定要注意的
+        this.oneComponent = this.$wxpage.selectComponent('#mychart-one');
+        console.log('[project_overview], onLoad');
+        //this.twoComponent = this.$wxpage.selectComponent('#mychart-two');
+    }
+    onReady() {
+        //这一步是一定要注意的
+        //this.oneComponent = this.$wxpage.selectComponent('#mychart-one');
+        //this.twoComponent = this.selectComponent('#mychart-two');
+    }
+    onShow(){
+
+        this.device_name = wepy.getStorageSync(DEVICE_NAME);
+        this.devunit_name = wepy.getStorageSync(DEVUNIT_NAME);
+        this.project_name = wepy.getStorageSync(PROJECT_NAME);
+        this.ecOne.project_name = this.project_name;
+
+        if (!this.devunit_name){
+            let res = wepy.showModal({
+                title: '请选定项目和设备',
+                content: '未知设备'
+            })
+        }
+
+        console.log("[project_overview], devunit_name:", this.devunit_name);
+
+        //this.getDeviceList({filter:{project_name: this.project_name}});
+        //this.getDeviceStatusStats({project_name: this.project_name});
+
+        //设备标题
+        this.project_name = wepy.getStorageSync(PROJECT_NAME);
+
+        //更新
+        let self = this;
+        this.oneComponent.init((canvas, width, height) => {
+            console.log('[project_overview], oneComponent init...', width);
+            console.log('[project_overview], oneComponent init...', height);
+            let chart = self.initChart(canvas, width, height);
+            return chart;
+        });
+    }
+    onHide(){
+          wepy.setStorageSync(PAGE_CONTEXT, this.config.navigationBarTitleText);
+    }
+    computed = {
+
+    };
+    methods = {
+    }
+    events = {
+
+    }
+}
+
+</script>
+<style lang="less">
+
+  .flex-wrp {display: flex;}
+  .item_box {width:50%; height: 210px;border: 5rpx solid #fff;}
+  .prj_leftbar{width:60%;height:80px; float:left; background:#fff;font-size:10px; font-family:"SimHei", Times, serif;}
+  .prj_rightbar{width:40%;height:80px; float:right; background: #fff;font-size:10px; font-family:"SimHei", Times, serif;}
+  .hidden {display: none;}
+
+  .pie__chart {
+      width: 100%;
+      height: 230px;
+      //background: red;
+  }
+
+  .ec-canvas {
+      width: 100%;
+      height: 100%;
+  }
+  .content {
+    width: 100%;
+    background-color: #F2F2F2;
+    overflow-y: auto;
+  }
+</style>

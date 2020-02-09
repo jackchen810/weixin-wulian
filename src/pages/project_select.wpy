@@ -1,0 +1,198 @@
+<template>
+    <view>
+        <button type="primary" loading="{{false}}" plain="{{false}}" disabled="{{false}}" bindtap="primary"> 项目列表 </button>
+        <i-radio-group current="{{currentPrjRadio}}" bindchange="handleProjectItemChange">
+            <repeat for="{{project_list}}" key="index" index="index" item="item">
+                <i-radio position="right" value="{{item}}"></i-radio>
+            </repeat>
+        </i-radio-group>
+        <button type="primary" loading="{{false}}" plain="{{false}}" disabled="{{false}}" bindtap="primary"> 设备列表 </button>
+        <!-- list -->
+        <i-radio-group current="{{currentDevRadio}}" bindchange="handleDeviceItemChange">
+            <repeat for="{{device_list}}" key="index" index="index" item="item">
+                <i-radio position="right" value="{{item.device_name}}"></i-radio>
+            </repeat>
+        </i-radio-group>
+        <view class="button_center">
+            <i-button  bind:click="handleClick" type="primary" inline="{{true}}" size="default">回到首页</i-button>
+        </view>
+        <!--
+        <i-button type="info" size="small" long="true">设备列表2</i-button>
+        <i-radio-group current="{{currentDevRadio}}" bindchange="handleDeviceItemChange">
+            <i-radio wx:for="{{device_list}}" position="right" wx:key="{{index}}" value="{{item}}">
+            </i-radio>
+        </i-radio-group>
+        -->
+    </view>
+</template>
+<script>
+import wepy from 'wepy';
+import api from '@/api/api';
+import tip from '@/utils/tip';
+import {
+  USER_INFO,USER_SPECICAL_INFO,DEVICE_NAME,CHANNEL_NAME,PROJECT_NAME,DEVUNIT_NAME,PAGE_CONTEXT
+} from '@/utils/constant';
+export default class Home extends wepy.page {
+  config = {
+      navigationBarTitleText: '项目',
+      usingComponents: {
+          "i-tabs": "../iview/tabs/index",
+          "i-tab": "../iview/tab/index",
+          //"i-action-sheet": "../iview/action-sheet/index",
+          "i-button": "../iview/button/index",
+          "i-cell-group": "../iview/cell-group/index",
+          "i-cell": "../iview/cell/index",
+          "i-radio-group": "../iview/radio-group/index",
+          "i-radio": "../iview/radio/index"
+      }
+  }
+  components = {
+    //deviceList: DeviceList,
+    //projectList: ProjectList,
+    //prjDevList: PrjDevList,
+  }
+
+  data = {
+      disabled: false,
+      loading: false,
+      avatarUrl: "",
+      nickName: "",
+      devunit_name: "jinxi_1",
+      channel_name: "C1_D1",
+      device_list: [],
+      project_list:[],
+      current: "tab1",
+      currentPrjRadio:'',
+      currentDevRadio:'',
+  }
+
+  async getDeviceList(params ) {
+      let that = this;
+      let json = await api.getDeviceInfo({query: params});
+      //console.log(json.data);
+      if (json.data.ret_code == 0) {
+          that.device_list = json.data.extra;
+          console.log("[project_select], device_list:", that.device_list);
+          that.$apply();
+      } else {
+          tip.error(json.data.ret_msg)
+      }
+      that.showLoading = false;
+  }
+  async getProjectList() {
+      let that = this;
+      let params = { };
+      let json = await api.getProjectArray({query: params});
+      console.log(json.data);
+      if (json.data.ret_code == 0) {
+          that.project_list = json.data.extra;
+          that.$apply();
+      } else {
+          tip.error(json.data.ret_msg)
+      }
+      that.showLoading = false;
+  }
+  handleClick() {
+      console.log('[project_select],handleClick:');
+      wepy.switchTab({url: '/pages/project_overview'});
+  }
+  onLoad() {
+
+  }
+  onShow(){
+
+      let project_name = wepy.getStorageSync(PROJECT_NAME);
+      let device_name = wepy.getStorageSync(DEVICE_NAME);
+      let devunit_name = wepy.getStorageSync(DEVUNIT_NAME);
+
+
+      if (!project_name || !devunit_name || !device_name){
+          console.log("project_select onShow modal");
+          let res = wepy.showModal({
+              title: '请选定项目和设备',
+              content: '未知设备'
+          })
+      }
+      else{
+          this.currentPrjRadio = project_name;
+          this.currentDevRadio = device_name;
+          this.devunit_name = devunit_name;
+      }
+
+      console.log("[project_select], onShow project_name:", this.currentPrjRadio);
+      console.log("[project_select], onShow device_name:", this.currentDevRadio);
+      console.log("[project_select], onShow devunit_name:", this.devunit_name);
+
+      this.getProjectList();
+      this.getDeviceList({filter:{project_name: this.currentPrjRadio}});
+
+
+
+      //console.log('[project_select],currentPrjRadio', this.currentPrjRadio);
+      //console.log('[project_select],currentDevRadio', this.currentDevRadio);
+  }
+  onHide(){
+
+  }
+  computed = {
+
+  }
+  methods = {
+      handleProjectItemChange:function(event) {
+          console.log('[project_select] handleProjectItemChange, detail', event.detail);
+
+          if(this.currentPrjRadio!= event.detail.value){
+              this.currentDevRadio = '';
+          }
+
+          this.currentPrjRadio = event.detail.value;
+          wepy.setStorageSync(PROJECT_NAME,this.currentPrjRadio);
+
+          console.log('[project_select].currentPrjRadio', this.currentPrjRadio);
+          console.log('[project_select].getDeviceList, project_name:', this.currentPrjRadio);
+          this.getDeviceList({filter:{project_name: this.currentPrjRadio}});
+      },
+
+      handleDeviceItemChange:function(event) {
+          //console.log('[project_select] event:', event);
+          console.log('[project_select] handleDeviceItemChange, detail', event.detail);
+
+          this.currentDevRadio = event.detail.value;
+          wepy.setStorageSync(DEVICE_NAME,this.currentDevRadio);
+          console.log('[project_select].currentDevRadio', this.currentDevRadio);
+
+          for (let i=0; i< this.device_list.length; i++){
+              if (this.currentDevRadio == this.device_list[i]['device_name']) {
+                  wepy.setStorageSync(DEVUNIT_NAME, this.device_list[i]['devunit_name']);
+
+                  console.log('[project_select].devunit_name.save', this.device_list[i]['devunit_name']);
+              }
+          }
+      }
+  }
+  events = {
+
+  }
+}
+
+</script>
+<style lang="less">
+  .header {
+    background: #ff6a3c;
+    height: 260rpx;
+    width: 100%;
+  }
+
+
+  .info_block {
+     background:#fff;
+     height: 100%;
+     padding-bottom:5px;
+  }
+
+  .flex-wrp {display: flex;}
+  .selector_background {background: #5cadff;}
+  .hidden {display: none;}
+  .button_center {text-align: center;width:200rpx;display:block;margin:0 auto}
+
+</style>

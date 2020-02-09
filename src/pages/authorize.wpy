@@ -1,0 +1,156 @@
+<template>
+  <view class="authorize-contianer">
+      <image class="authorize-icon" src="../images/authorize.png"></image>
+      <view class="auth-item">平台申请获取以下权限：</view>
+      <view class="auth-item">获取你的公开信息（头像、昵称等）</view>
+      <view class="btn-authorize">
+          <button open-type="getUserInfo" type="primary" lang="zh_CN" bindgetuserinfo="onGotUserInfo">授权</button>
+      </view>
+  </view>
+</template>
+<script>
+import wepy from 'wepy';
+import api from '@/api/api';
+import {
+  SYSTEM_INFO,
+  USER_SPECICAL_INFO,
+  USER_INFO
+} from '@/utils/constant';
+export default class Authorize extends wepy.page {
+  config = {
+    navigationBarTitleText: '授权登录',
+  }
+  async onLoad() {
+
+      //设置cookie
+      wepy.setStorageSync("Cookie", '');
+
+      let res = await wepy.getSetting();
+      console.log("onLoad, getSetting:", res);
+      if ((res.authSetting)['scope.userInfo']) {
+          let userInfo = wepy.getStorageSync(USER_INFO);
+          console.log("onLoad, wepy.get.userInfo:", userInfo);
+          if (!userInfo.nickName) {
+              let data  = await wepy.getUserInfo();
+              if (data) {
+                  wepy.setStorageSync(USER_INFO, data.userInfo);
+              }
+              let res = await wepy.login();
+              console.log("onLoad, wepy.login:", res);
+
+              if (res.code) {
+                  let systemInfo = wepy.getSystemInfoSync();
+                  wepy.setStorageSync(SYSTEM_INFO, systemInfo);
+                  let rlt = await api.wxJsCode2Session({
+                      query: {
+                        js_code: res.code,
+                        nick_name: data.userInfo.nickName
+                      }
+                  })
+
+                  console.log("wxJsCode2Session header:", rlt.header);
+                  if (rlt.header.hasOwnProperty('set-cookie')){
+                      //console.log("set-cookie:", rlt.header['set-cookie']);
+                      let n=rlt.header['set-cookie'].indexOf(";");
+                      let sessionid = rlt.header['set-cookie'].substring(0, n);
+                      console.log(sessionid);
+
+                      //保存cookie， wxRequest 发送时读取Cookie，填写到http 头中
+                      // jscode2session 后台处理中填写账号，用户类型
+                      wepy.setStorageSync("Cookie", sessionid);
+                  }
+
+                  if (rlt.data.result) {
+                      let data = rlt.data;
+                      if (data.data.openid) {
+                        wepy.setStorageSync(USER_SPECICAL_INFO, data.data);
+                      }
+                  }
+              }
+          }
+          wepy.switchTab({
+            url: '/pages/homed'
+          })
+      }
+  }
+  async onGotUserInfo(e) {
+      console.log("onGotUserInfo:", e);
+      if (e.detail.errMsg == 'getUserInfo:ok') {
+          let res = await wepy.login();
+          if (res.code) {
+              wepy.setStorageSync(USER_INFO, e.detail.userInfo);
+              //let systemInfo = wepy.getSystemInfoSync();
+              //wepy.setStorageSync(SYSTEM_INFO, systemInfo);
+              let rlt = await api.wxJsCode2Session({
+                  query: {
+                      js_code: res.code,
+                      nick_name: e.detail.userInfo.nickName
+                  }
+              });
+
+              console.log("wxJsCode2Session header:", rlt.header);
+              if (rlt.header.hasOwnProperty('set-cookie')){
+                  //console.log("set-cookie:", rlt.header['set-cookie']);
+                  let n=rlt.header['set-cookie'].indexOf(";");
+                  let sessionid = rlt.header['set-cookie'].substring(0, n);
+                  console.log(sessionid);
+
+                  //保存cookie， wxRequest 发送时读取Cookie，填写到http 头中
+                  // jscode2session 后台处理中填写账号，用户类型
+                  wepy.setStorageSync("Cookie", sessionid);
+              }
+
+
+              if (rlt.data.ret_code == 0) {
+                  let data = rlt.data.extra;
+                  //console.log("wxJsCode2Session extra:", data);
+                  if (data.openid) {
+                      wepy.setStorageSync(USER_SPECICAL_INFO, data);
+                      wepy.switchTab({url: '/pages/project_overview'});
+                  }
+              } else {
+                  let res = await wepy.showModal({
+                      title: 'appid有误',
+                      content: '授权失败'
+                  })
+
+                  if (res.confirm) {
+                      wepy.switchTab({url: '/pages/project_overview'});
+                  }
+              }
+          }
+      }
+  }
+  methods = {
+
+  }
+  events = {
+
+  }
+}
+</script>
+<style lang="less">
+page {
+  height: 100%;
+}
+
+.authorize-contianer {
+  height: 100%;
+  background: #fff;
+  text-align: center;
+  padding-top: 100rpx;
+  .authorize-icon {
+    width: 128rpx;
+    height: 128rpx;
+    display: block;
+    margin: 0 auto;
+    padding-bottom: 10rpx;
+  }
+  .auth-item {
+    padding: 5rpx 0;
+  }
+  .btn-authorize {
+    margin: 100rpx 50rpx;
+  }
+}
+</style>

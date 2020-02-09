@@ -1,0 +1,189 @@
+<template>
+    <view class="info_block">
+            <i-cell-group color="red">
+                <i-cell i-class="item_background" bind:click="handleClick" title="{{device_name}}" value="切换" is-link></i-cell>
+            </i-cell-group>
+            <i-drawer mode="right" visible="{{showRight}}" bind:close="handleClick">
+                <view class="info_block">
+                    <i-cell-group>
+                        <repeat for="{{device_list}}" key="index" index="index" item="item">
+                            <i-cell bind:click="handleDeviceClick(event)" id="{{index}}" title="{{item.device_name}}" ></i-cell>
+                        </repeat>
+                    </i-cell-group>
+                </view>
+            </i-drawer>
+        <i-row>
+            <repeat for="{{module_list}}" key="index" index="index" item="item">
+                <i-col span="6" i-class="item_box">
+                    <view class="leftbar">
+                        <view>
+                            <text style="color:white">模块{{index+1}}\n</text>
+                        </view>
+                        <text style="line-height:20px;color:#b2b2b2">功率:\n</text>
+                        <text style="color:#00bfff">20</text>
+                        <text style="color:#b2b2b2">kW\n</text>
+                        <text style="line-height:20px;color:#b2b2b2">负载率:\n</text>
+                        <text style="color:#00bfff">80%</text>
+                    </view>
+                    <view class="rightbar">
+                        <text style="color:white;background:green;font-size:10px;float:right;" wx:if="{{item == '1.000' || item == '1'}}">运行\n</text>
+                        <text style="color:white;background:red;font-size:10px;float:right;" wx:else>停止\n</text>
+                        <text style="color:white;background:green;font-size:10px;float:right;" wx:if="{{alarm_list[index] == '0.000' || alarm_list[index] == '0'}}">正常\n</text>
+                        <text style="color:white;background:red;font-size:10px;float:right;" wx:else>故障\n</text>
+                    </view>
+                </i-col>
+            </repeat>
+        </i-row>
+    </view>
+</template>
+<script>
+import wepy from 'wepy';
+import api from '@/api/api';
+import tip from '@/utils/tip';
+import {
+  USER_INFO,USER_SPECICAL_INFO,DEVICE_NAME,CHANNEL_NAME,DEVUNIT_NAME,PROJECT_NAME,PAGE_CONTEXT
+} from '@/utils/constant';
+export default class DeviceModule extends wepy.page {
+    config = {
+        navigationBarTitleText: '模块',
+        usingComponents: {
+            "i-row": "../iview/row/index",
+            "i-col": "../iview/col/index",
+            "i-radio": "../iview/radio/index",
+            "i-drawer": "../iview/drawer/index",
+            "i-cell-group": "../iview/cell-group/index",
+            "i-cell": "../iview/cell/index"
+        }
+    }
+    components = {
+
+    }
+
+    data = {
+        project_name: "",
+        device_name: "",
+        devunit_name: "jinxi_1",
+        device_list: [],
+        module_list: [],
+        alarm_list: [],
+        current: "tab1",
+        showRight: false,
+        src:"https://dsjiaqi.cn/image/20181020233202.jpg"
+    }
+    async getDeviceList(params ) {
+        let that = this;
+        let json = await api.getDeviceInfo({query: params});
+        //console.log(json.data);
+        if (json.data.ret_code == 0) {
+            that.device_list = json.data.extra;
+            console.log("[device_module], device_list:", that.device_list);
+            that.$apply();
+        } else {
+            tip.error(json.data.ret_msg)
+        }
+        that.showLoading = false;
+    }
+    async getDeviceStatusList(params) {
+        let that = this;
+        let json = await api.getDevModuleStatus({query: params});
+        console.log("[device_module], getDevModuleStatus:", json.data);
+        if (json.data.ret_code == 0) {
+            that.module_list = json.data.extra.dataList;
+            that.alarm_list = json.data.extra.alarmList;
+            that.$apply();
+        } else {
+            tip.error(json.data.ret_msg)
+        }
+        that.showLoading = false;
+    }
+    handleClick() {
+        this.showRight = !this.showRight;
+        console.log('[device_module], showRight:', this.showRight);
+    }
+    handleDeviceClick(event) {
+        console.log('[device_module], event.currentTarget.id:', event.currentTarget.id);
+
+        this.devunit_name = this.device_list[event.currentTarget.id].devunit_name;
+        this.device_name = this.device_list[event.currentTarget.id].device_name;
+
+        //设备标题
+        //wx.setNavigationBarTitle({title: this.device_name});
+
+        //获取数据
+        console.log('[device_module], devunit_name:', this.devunit_name);
+        let params = {
+            devunit_name:this.devunit_name,
+        };
+        this.getDeviceStatusList(params);
+
+        //记录当前设备名称
+        wepy.setStorageSync(DEVICE_NAME, this.device_name);
+        wepy.setStorageSync(DEVUNIT_NAME, this.devunit_name);
+
+        // 菜单隐藏掉
+        this.showRight = false;
+    }
+    onLoad() {
+
+    }
+    onShow(){
+        this.device_name = wepy.getStorageSync(DEVICE_NAME);
+        this.devunit_name = wepy.getStorageSync(DEVUNIT_NAME);
+        this.project_name = wepy.getStorageSync(PROJECT_NAME);
+
+        if (!this.devunit_name){
+            let res = wepy.showModal({
+                title: '请选定项目和设备',
+                content: '未知设备'
+            })
+        }
+
+        console.log("[device_module], devunit_name:", this.devunit_name);
+        let params = {
+            devunit_name:this.devunit_name,
+        };
+        this.getDeviceStatusList(params);
+        this.getDeviceList({filter:{project_name: this.project_name}});
+
+
+        //设备标题
+        //wx.setNavigationBarTitle({title: this.device_name});
+    }
+    onHide(){
+        wepy.setStorageSync(PAGE_CONTEXT, this.config.navigationBarTitleText);
+    }
+    computed = {
+
+    }
+    methods = {
+    }
+    events = {
+
+    }
+}
+
+</script>
+<style lang="less">
+.header {
+  background: #ff6a3c;
+  height: 260rpx;
+  width: 100%;
+}
+
+
+.info_block {
+   background:#fff;
+   height: 100%;
+   padding-bottom:5px;
+
+
+  .flex-wrp {display: flex;}
+  .selector_background {background: #5cadff;}
+  .right{position: relative; right:0px;}
+
+  .item_box {width:24.5%; height: 90px;border: 5rpx solid #fff;}
+  .leftbar{width:65%;height:90px; float:left; background:#1f2f49;font-size:10px; font-family:"SimHei", Times, serif;}
+  .rightbar{width:35%;height:90px; float:right; background: #1f2f49;}
+}
+
+</style>

@@ -1,0 +1,80 @@
+<style lang="less">
+@import "./styles/base";
+@import "./styles/icon";
+@import "./styles/style";
+
+</style>
+<script>
+import wepy from 'wepy';
+import 'wepy-async-function'
+export default class extends wepy.app {
+  config = {
+    pages: [
+      'pages/authorize',
+      'pages/project_overview',
+      'pages/device_data',
+      'pages/device_module',
+      'pages/device_charts',
+      'pages/project_select',
+      'pages/log_list',
+      'pages/setting',
+      'pages/info'
+    ],
+    window: {
+      backgroundTextStyle: 'dark',
+      navigationBarBackgroundColor: '#FFFFFF',
+      navigationBarTitleText: 'WeChat',
+      navigationBarTextStyle: 'black',
+      enablePullDownRefresh: false,
+      backgroundColor: '#EFEFEF'
+
+    },
+    "tabBar": {
+      "color": "#999999",
+      "selectedColor": "#ff6a3c",
+      "backgroundColor": "#ffffff",
+      "borderStyle": "black",
+      "list": [{
+        "pagePath": "pages/project_overview",
+        "text": "项目",
+        "iconPath": "images/icon_home.png",
+        "selectedIconPath": "images/icon_home_active.png"
+      }, {
+        "pagePath": "pages/device_module",
+        "text": "模块",
+        "iconPath": "images/icon_classify.png",
+        "selectedIconPath": "images/icon_classify_active.png"
+      }, {
+        "pagePath": "pages/device_data",
+        "text": "数据",
+        "iconPath": "images/icon_shop_cart.png",
+        "selectedIconPath": "images/icon_shop_cart_active.png"
+      }, {
+        "pagePath": "pages/log_list",
+        "text": "日志",
+        "iconPath": "images/icon_classify.png",
+        "selectedIconPath": "images/icon_classify_active.png"
+      }, {
+        "pagePath": "pages/info",
+        "text": "我的",
+        "iconPath": "images/icon_info.png",
+        "selectedIconPath": "images/icon_info_active.png"
+      }]
+    }
+  }
+
+  globalData = {}
+
+  constructor() {
+      super()
+      this.use('requestfix')
+      this.use('promisify');
+
+  }
+
+  async onLaunch(option) {
+
+  }
+}
+
+</script>

@@ -1,0 +1,169 @@
+<template>
+    <view class="info_block">
+        <i-cell-group color="red">
+            <i-cell i-class="item_background" bind:click="handleClick" title="{{device_name}}" value="切换" is-link></i-cell>
+        </i-cell-group>
+        <i-drawer mode="right" visible="{{showRight}}" bind:close="handleClick">
+            <view class="info_block">
+                <i-cell-group>
+                    <repeat for="{{device_list}}" key="index" index="index" item="item">
+                        <i-cell bind:click="handleDeviceClick(event)" id="{{index}}" title="{{item.device_name}}" ></i-cell>
+                    </repeat>
+                </i-cell-group>
+            </view>
+        </i-drawer>
+        <!-- list -->
+        <i-cell-group>
+            <repeat for="{{real_data_list}}" key="index" index="index" item="item">
+                <i-cell i-class="item_background" title="{{item.varName}}" value="{{item.varValue}}" is-link link-type="navigateTo" url="/pages/device_charts?device_name={{device_name}}&devunit_name={{devunit_name}}&var_name={{item.varName}}"></i-cell>
+            </repeat>
+        </i-cell-group>
+    </view>
+</template>
+<script>
+import wepy from 'wepy';
+import api from '@/api/api';
+import tip from '@/utils/tip';
+import {
+  USER_INFO,DEVICE_NAME,CHANNEL_NAME,DEVUNIT_NAME,PROJECT_NAME,PAGE_CONTEXT
+} from '@/utils/constant';
+export default class DeviceData extends wepy.page {
+    config = {
+        navigationBarTitleText: '数据',
+        usingComponents: {
+            "i-icon": "../iview/icon/index",
+            "i-row": "../iview/row/index",
+            "i-col": "../iview/col/index",
+            "i-button": "../iview/button/index",
+            "i-drawer": "../iview/drawer/index",
+            "i-notice-bar": "../iview/notice-bar/index",
+            "i-cell-group": "../iview/cell-group/index",
+            "i-cell": "../iview/cell/index"
+        }
+    }
+    components = {
+
+    }
+
+    data = {
+        devunit_name: "",
+        channel_name: "",
+        device_name: "",
+        project_name: "",
+        real_data_list: [],
+        device_list: [],
+        showRight: false,
+        showModal:false
+    }
+    async getDeviceRealData(devunit_name) {
+        let that = this;
+        let params = {
+            page_size: 10,
+            current_page: 1,
+            filter: {
+                  devunit_name: devunit_name,
+             }
+        };
+        let json = await api.getDeviceRealData({query: params});
+        console.log(json.data);
+        if (json.data.ret_code == 0) {
+          that.real_data_list = json.data.extra;
+          that.$apply();
+        } else {
+          tip.error(json.data.ret_msg);
+        }
+        that.showLoading = false;
+    }
+    async getDeviceList(params ) {
+        let that = this;
+        let json = await api.getDeviceInfo({query: params});
+        //console.log(json.data);
+        if (json.data.ret_code == 0) {
+            that.device_list = json.data.extra;
+            console.log("[device_data], device_list:", that.device_list);
+            that.$apply();
+        } else {
+            tip.error(json.data.ret_msg)
+        }
+        that.showLoading = false;
+    }
+    handleClick() {
+        this.showRight = !this.showRight;
+        console.log('[device_data], showRight:', this.showRight);
+    }
+    handleDeviceClick(event) {
+        console.log('[device_data], event.currentTarget.id:', event.currentTarget.id);
+
+        this.devunit_name = this.device_list[event.currentTarget.id].devunit_name;
+        this.device_name = this.device_list[event.currentTarget.id].device_name;
+
+        //设备标题
+        //wx.setNavigationBarTitle({title: this.device_name});
+
+        //获取数据
+        console.log('[device_data], devunit_name:', this.devunit_name);
+        this.getDeviceRealData(this.devunit_name);
+
+        //记录当前设备名称
+        wepy.setStorageSync(DEVICE_NAME, this.device_name);
+        wepy.setStorageSync(DEVUNIT_NAME, this.devunit_name);
+
+        // 菜单隐藏掉
+        this.showRight = false;
+    }
+
+    onLoad() {
+        console.log("[device_data] , onLoad....");
+    }
+    onShow(){
+
+        this.device_name = wepy.getStorageSync(DEVICE_NAME);
+        this.devunit_name = wepy.getStorageSync(DEVUNIT_NAME);
+        this.project_name = wepy.getStorageSync(PROJECT_NAME);
+
+        if (!this.devunit_name){
+            let res = wepy.showModal({
+                title: '请选定项目和设备',
+                content: '未知设备'
+            })
+        }
+
+
+        console.log("[device_data] , devunit_name:", this.devunit_name);
+
+        this.getDeviceRealData(this.devunit_name);
+        this.getDeviceList({filter:{project_name: this.project_name}});
+
+        //设备标题
+        //wx.setNavigationBarTitle({title: this.device_name});
+    }
+    onHide(){
+      this.showRight = false;
+    }
+    computed = {
+
+    }
+    methods = {
+
+    }
+    events = {
+
+    }
+}
+
+</script>
+<style lang="less">
+.header {
+  background: #ff6a3c;
+  height: 260rpx;
+  width: 100%;
+}
+
+.info_block {
+   background:#fff;
+   height: 100%;
+   padding-bottom:5px;
+}
+  .flex-wrp {display: flex;}
+  .item_background {background: #fff;}
+</style>
