@@ -1,4 +1,5 @@
 # weixin-wulian
+1）webstorm 使用npm run dev命令实时编译到dist，将dist目录使用微信开发者工具添加项目，仔细阅读下面说明
 
 
 ### 安装（更新） wepy 命令行工具。
@@ -126,26 +127,6 @@
 
 
 
-### 部分功能截图
-
-
-<img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG263.jpeg" width="365" height="619" /> 	<img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG264.jpeg" width="365" height="619"/> 
-
-
-<img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG265.jpeg" width="365" height="619"/> 		<img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG266.jpeg" width="365" height="619"/> 
-
-<img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG267.jpeg" width="365" height="619"/>		 <img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG268.jpeg" width="365" height="619"/> 
-
-<img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG269.jpeg" width="365" height="619"/>		 <img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG270.jpeg" width="365" height="619"/> 
-
-
-<img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG271.jpeg" width="365" height="619"/>		 <img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG272.jpeg" width="365" height="619"/> 
-
-<img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG273.jpeg" width="365" height="619"/>		 <img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG274.jpeg" width="365" height="619"/> 
-
-<img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG275.jpeg" width="365" height="619"/> 
-
-
 
 ### 说明
 
@@ -154,11 +135,3 @@
 ### 联系方式
 
  
- <img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG278.png" width="624" height="371"/>
-
-
- <!-- ### 友情赞助
- 如果本项目对你有较大的帮助，可以对我打赏，否则不需要，随便放个二维码，看看有没有对我特别好的小伙伴 ~ 哈哈 
-<img src="https://github.com/dyq086/wxYuHanStore/blob/master/screenshots/WechatIMG276.jpg" width="400" height="400"/>  -->
-
-
